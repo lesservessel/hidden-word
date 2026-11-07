@@ -179,13 +179,13 @@ struct BlankingView: View {
         _order = State(initialValue: tokens.filter(\.hasLetters).map(\.id).shuffled())
     }
 
-    private var hidden: Set<Int> {
+    private var hiddenIDs: Set<Int> {
         let count = Int((Double(order.count) * Double(round) / Double(steps)).rounded(.up))
         return Set(order.prefix(count))
     }
 
     var body: some View {
-        let hidden = self.hidden
+        let hiddenIDs = self.hiddenIDs
         VStack(alignment: .leading, spacing: 16) {
             ProgressView(value: Double(round), total: Double(steps)) {
                 Text(round == 0 ? "Read it through once" : "Round \(round) of \(steps)")
@@ -195,13 +195,13 @@ struct BlankingView: View {
 
             FlowLayout {
                 ForEach(tokens) { token in
-                    let isHidden = hidden.contains(token.id) && !peeked.contains(token.id)
+                    let isHidden = hiddenIDs.contains(token.id) && !peeked.contains(token.id)
                     Text(isHidden ? token.blanked : token.raw)
                         .font(.system(.title3, design: .serif))
                         .foregroundStyle(isHidden ? Color.secondary : Color.primary)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            guard hidden.contains(token.id) else { return }
+                            guard hiddenIDs.contains(token.id) else { return }
                             if peeked.contains(token.id) {
                                 peeked.remove(token.id)
                             } else {
