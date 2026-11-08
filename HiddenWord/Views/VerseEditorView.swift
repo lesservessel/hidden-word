@@ -39,6 +39,7 @@ struct VerseEditorView: View {
                     TextEditor(text: $text)
                         .font(.system(.body, design: .serif))
                         .frame(minHeight: 160)
+                        .onChange(of: text) { old, new in textChanged(from: old, to: new) }
                     PasteButton(payloadType: String.self) { strings in
                         let pasted = strings.first ?? ""
                         Task { @MainActor in
@@ -48,7 +49,7 @@ struct VerseEditorView: View {
                 } header: {
                     Text("Verse text")
                 } footer: {
-                    Text("Copy the verse in your Bible app, then tap Paste. If the reference comes along on its own line, it is filled in for you.")
+                    Text("Copy a verse or passage from any Bible app or website, then tap Paste. Verse numbers, headings and footnote marks are removed, and the reference and translation are filled in when they come along.")
                 }
             }
             .navigationTitle(verse == nil ? "Add Verse" : "Edit Verse")
@@ -85,42 +86,22 @@ struct VerseEditorView: View {
         dismiss()
     }
 
-    /// Accepts plain verse text, or text with the reference on its first or last line
-    /// (as most Bible apps copy it). Drops share links.
+    /// Cleans pasted text down to just the passage (see `PassageCleaner`) and fills in the
+    /// reference and translation when they came along and the fields are still empty.
     private func applyPaste(_ pasted: String) {
-        var lines = pasted
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty && !$0.lowercased().hasPrefix("http") }
-
-        if lines.count > 1, reference.isEmpty {
-            if let first = lines.first, Self.looksLikeReference(first) {
-                setReference(from: first)
-                lines.removeFirst()
-            } else if let last = lines.last, Self.looksLikeReference(last) {
-                setReference(from: last)
-                lines.removeLast()
-            }
-        }
-        text = lines.joined(separator: " ")
+        let result = PassageCleaner.clean(pasted)
+        if reference.isEmpty, let ref = result.reference { reference = ref }
+        if translation.isEmpty, let tag = result.translation { translation = tag }
+        text = result.text
     }
 
-    /// "John 3:30 ESV" -> reference "John 3:30", translation "ESV".
-    private func setReference(from line: String) {
-        var words = line.split(separator: " ").map(String.init)
-        if let last = words.last, words.count > 1,
-           (2...6).contains(last.count),
-           last.allSatisfy({ $0.isUppercase || $0.isNumber }),
-           last.contains(where: { $0.isLetter }) {
-            if translation.isEmpty { translation = last }
-            words.removeLast()
-        }
-        reference = words.joined(separator: " ")
-    }
-
-    static func looksLikeReference(_ line: String) -> Bool {
-        guard line.count <= 40 else { return false }
-        let pattern = "^[1-3]?\\s?[A-Za-z][A-Za-z .]*\\s\\d+:\\d+"
-        return line.range(of: pattern, options: .regularExpression) != nil
+    /// A paste straight into the text box (long-press > Paste) arrives as one big jump in
+    /// length. Typing never adds this much at once, so ordinary editing is left alone.
+    private func textChanged(from old: String, to new: String) {
+        guard new.count - old.count >= 25 else { return }
+        let cleaned = PassageCleaner.clean(new)
+        guard cleaned.text != new else { return }
+        // Apply after the text view finishes its own paste, or it can overwrite our change.
+        DispatchQueue.main.async { applyPaste(new) }
     }
 }
