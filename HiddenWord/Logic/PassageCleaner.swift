@@ -28,7 +28,7 @@ enum PassageCleaner {
         var translation: String?
         var reference: String?
 
-        var lines = raw
+        var lines = repairEncoding(raw)
             .replacingOccurrences(of: "\u{00A0}", with: " ")
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
@@ -106,6 +106,32 @@ enum PassageCleaner {
         }
 
         return Result(text: text, reference: reference, translation: translation)
+    }
+
+    // MARK: - Garbled characters
+
+    /// Fixes text whose UTF-8 bytes were read in the wrong encoding, which turns curly quotes
+    /// and dashes into junk: ’ -> "‚Äô" (Mac Roman) or "â€™" (Windows), “ -> "‚Äú", — -> "‚Äî".
+    static func repairEncoding(_ text: String) -> String {
+        let attempts: [(marker: String, encoding: String.Encoding)] = [
+            ("‚Ä", .macOSRoman), ("â€", .windowsCP1252), ("Ã", .windowsCP1252),
+        ]
+        for (marker, encoding) in attempts where text.contains(marker) {
+            // Whole string: re-encode to the bytes it came from, then read them as UTF-8.
+            if let bytes = text.data(using: encoding),
+               let fixed = String(data: bytes, encoding: .utf8) {
+                return fixed
+            }
+        }
+        // Mixed text that can't round-trip: fix the common sequences one by one.
+        var fixed = text
+        let table: [(String, String)] = [
+            ("‚Äô", "’"), ("‚Äò", "‘"), ("‚Äú", "“"), ("‚Äù", "”"), ("‚Äî", "—"), ("‚Äì", "–"), ("‚Ä¶", "…"), ("¬†", " "),
+            ("â€™", "’"), ("â€˜", "‘"), ("â€œ", "“"), ("â€\u{FFFD}", "”"), ("â€\u{9D}", "”"), ("â€”", "—"), ("â€“", "–"), ("â€¦", "…"),
+            ("â€", "”"),  // closing quote whose last byte was dropped; must come after the others
+        ]
+        for (bad, good) in table { fixed = fixed.replacingOccurrences(of: bad, with: good) }
+        return fixed
     }
 
     // MARK: - Line tests
@@ -223,7 +249,8 @@ enum PassageCleaner {
     /// Bible sites mark footnotes with a superscript letter that loses its formatting on copy.
     static func unstickFootnoteLetters(_ text: String, isWord: SpellCheck) -> String {
         // A letter stuck straight after punctuation: "brothers,b when" -> "brothers, when".
-        var result = replace(#"(?<=[,.;:!?”’])[a-z](?=\s|$)"#, in: text, with: "")
+        // Apostrophes are left out on purpose: "person’s", "Lord’s", "can’t" are real words.
+        var result = replace(#"(?<=[,.;:!?”"])[a-z](?=\s|$)"#, in: text, with: "")
         for match in allMatches(#"\b([A-Za-z’']{3,})([a-z])\b"#, in: result).reversed() {
             let word = match.groups[0] + match.groups[1]
             let stem = match.groups[0]

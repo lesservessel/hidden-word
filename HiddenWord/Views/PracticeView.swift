@@ -36,6 +36,7 @@ struct PracticeView: View {
     @Environment(\.modelContext) private var context
     @Environment(StreakStore.self) private var streak
     @Environment(\.dismiss) private var dismiss
+    @State private var keyboardVisible = false
 
     init(verse: Verse, progressLabel: String? = nil, onGraded: ((Bool) -> Void)? = nil) {
         self.verse = verse
@@ -69,9 +70,18 @@ struct PracticeView: View {
                 }
             }
             .padding()
+            // Tapping empty space closes the keyboard (buttons and words still get their taps).
+            .background(Color.clear.contentShape(Rectangle()).onTapGesture { Keyboard.dismiss() })
         }
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) { gradeBar }
+        .safeAreaInset(edge: .bottom) {
+            // Hidden while typing so the keyboard and the grade bar don't eat the whole screen.
+            if !keyboardVisible { gradeBar }
+        }
+        .onKeyboardVisibilityChange { visible in
+            withAnimation(.easeOut(duration: 0.2)) { keyboardVisible = visible }
+        }
+        .keyboardDoneButton()
         .navigationTitle(progressLabel ?? verse.reference)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -252,14 +262,15 @@ struct TypeRecallView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            TextEditor(text: $attempt)
+            // A growing field (not TextEditor) so the box gets taller as you type and the page
+            // scrolls, instead of the text scrolling inside a small box behind the keyboard.
+            TextField("Type the verse from memory", text: $attempt, axis: .vertical)
+                .lineLimit(5...)
                 .focused($editorFocused)
                 .font(.system(.body, design: .serif))
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.sentences)
-                .scrollContentBackground(.hidden)
-                .frame(minHeight: 140)
-                .padding(8)
+                .padding(12)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityLabel("Type the verse")
 

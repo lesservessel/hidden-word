@@ -52,6 +52,8 @@ struct VerseEditorView: View {
                     Text("Copy a verse or passage from any Bible app or website, then tap Paste. Verse numbers, headings and footnote marks are removed, and the reference and translation are filled in when they come along.")
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
+            .keyboardDoneButton()
             .navigationTitle(verse == nil ? "Add Verse" : "Edit Verse")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -69,7 +71,7 @@ struct VerseEditorView: View {
     private func save() {
         let cleanReference = reference.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanTranslation = translation.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanText = text
+        let cleanText = PassageCleaner.repairEncoding(text)
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }

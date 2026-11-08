@@ -28,6 +28,19 @@ struct RootView: View {
         }
         .task {
             StarterDeck.seedIfNeeded(context: context)
+            repairGarbledVerses()
         }
+    }
+
+    /// Fixes verses saved before the paste cleanup repaired garbled quotes ("person‚Äôs").
+    /// Cheap and idempotent, so it simply runs on every launch.
+    private func repairGarbledVerses() {
+        guard let verses = try? context.fetch(FetchDescriptor<Verse>()) else { return }
+        var changed = false
+        for verse in verses {
+            let text = PassageCleaner.repairEncoding(verse.text)
+            if text != verse.text { verse.text = text; changed = true }
+        }
+        if changed { try? context.save() }
     }
 }
