@@ -43,7 +43,7 @@ struct SettingsView: View {
                 } header: {
                     FormHeader("Reminder")
                 } footer: {
-                    FormFooter("A gentle notification from this iPhone. Nothing is sent anywhere.")
+                    FormFooter("Each morning brings that day's verse. Scheduled on this iPhone; nothing is sent anywhere.")
                 }
 
                 Section {

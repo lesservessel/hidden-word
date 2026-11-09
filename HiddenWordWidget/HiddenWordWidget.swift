@@ -113,7 +113,6 @@ struct VerseWidget: Widget {
         StaticConfiguration(kind: "HiddenWordVerse", provider: VerseProvider()) { entry in
             VerseWidgetView(entry: entry)
                 .containerBackground(for: .widget) { WidgetPaper() }
-                .widgetURL(URL(string: "hiddenword://today"))
         }
         .configurationDisplayName("Today’s verse")
         .description("The day’s verse from your Hidden Word deck.")
