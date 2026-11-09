@@ -18,10 +18,16 @@ enum PracticeMode: String, CaseIterable, Identifiable {
         }
     }
 
+    /// New verses start with first letters; once a verse has come back a few times it
+    /// starts in Blanks, already partly hidden. Typing and speaking stay a choice.
+    static func suggested(for box: Int) -> PracticeMode {
+        box <= 1 ? .firstLetter : .blanking
+    }
+
     var hint: String {
         switch self {
         case .firstLetter: return "Say it from the first letters. Touch a word to see it."
-        case .blanking: return "Read it once, then let words fall away."
+        case .blanking: return "Words fall away as you go. Touch a blank to peek."
         case .recite: return "Say it aloud. Each word appears as you speak it."
         case .typeIt: return "Write it from memory."
         }
@@ -36,7 +42,8 @@ struct PracticeView: View {
     let progress: Double?
     let onGraded: ((Bool) -> Void)?
 
-    @AppStorage("practiceMode") private var mode: PracticeMode = .firstLetter
+    /// Starts where this verse needs it (see `PracticeMode.suggested`); you can still switch.
+    @State private var mode: PracticeMode
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var keyboardVisible = false
@@ -49,6 +56,7 @@ struct PracticeView: View {
         self.verse = verse
         self.progress = progress
         self.onGraded = onGraded
+        _mode = State(initialValue: PracticeMode.suggested(for: verse.box))
     }
 
     var body: some View {
@@ -67,7 +75,7 @@ struct PracticeView: View {
                 Group {
                     switch mode {
                     case .firstLetter: FirstLetterView(text: verse.text)
-                    case .blanking: BlankingView(text: verse.text)
+                    case .blanking: BlankingView(text: verse.text, startRound: BlankingView.startRound(for: verse.box))
                     case .recite: ReciteView(text: verse.text)
                     case .typeIt: TypeRecallView(text: verse.text)
                     }
@@ -250,12 +258,23 @@ struct BlankingView: View {
     private let steps = 5
 
     @State private var order: [Int]
-    @State private var round = 0
+    @State private var round: Int
     @State private var peeked: Set<Int> = []
 
-    init(text: String) {
+    /// Familiar verses begin with some words already gone.
+    static func startRound(for box: Int) -> Int {
+        switch box {
+        case ...2: return 0
+        case 3: return 2
+        case 4: return 3
+        default: return 4
+        }
+    }
+
+    init(text: String, startRound: Int = 0) {
         let tokens = WordToken.tokenize(text)
         self.tokens = tokens
+        _round = State(initialValue: startRound)
         _order = State(initialValue: tokens.filter(\.hasLetters).map(\.id).shuffled())
     }
 
