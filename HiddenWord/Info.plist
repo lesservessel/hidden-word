@@ -29,6 +29,10 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>So you can say a verse aloud and see each word appear as you speak it. Nothing is recorded or kept.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>To recognize the words of a verse as you say it aloud. On supported iPhones this happens entirely on the device.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>CormorantGaramond.ttf</string>

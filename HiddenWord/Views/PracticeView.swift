@@ -4,6 +4,7 @@ import SwiftData
 enum PracticeMode: String, CaseIterable, Identifiable {
     case firstLetter
     case blanking
+    case recite
     case typeIt
 
     var id: String { rawValue }
@@ -12,6 +13,7 @@ enum PracticeMode: String, CaseIterable, Identifiable {
         switch self {
         case .firstLetter: return "Letters"
         case .blanking: return "Blanks"
+        case .recite: return "Say"
         case .typeIt: return "Type"
         }
     }
@@ -20,6 +22,7 @@ enum PracticeMode: String, CaseIterable, Identifiable {
         switch self {
         case .firstLetter: return "Say it from the first letters. Touch a word to see it."
         case .blanking: return "Read it once, then let words fall away."
+        case .recite: return "Say it aloud. Each word appears as you speak it."
         case .typeIt: return "Write it from memory."
         }
     }
@@ -65,6 +68,7 @@ struct PracticeView: View {
                     switch mode {
                     case .firstLetter: FirstLetterView(text: verse.text)
                     case .blanking: BlankingView(text: verse.text)
+                    case .recite: ReciteView(text: verse.text)
                     case .typeIt: TypeRecallView(text: verse.text)
                     }
                 }
@@ -439,5 +443,124 @@ struct TypeRecallView: View {
         case 50..<80: return "Taking root."
         default: return "Keep sowing. Letters may help."
         }
+    }
+}
+
+// MARK: - Recite-aloud mode
+
+/// Say the verse; each word fades in as it is heard. Nothing is recorded or kept.
+struct ReciteView: View {
+    let text: String
+    let tokens: [WordToken]
+
+    @State private var listener = Listener()
+    @State private var peeked: Set<Int> = []
+
+    init(text: String) {
+        self.text = text
+        self.tokens = WordToken.tokenize(text)
+    }
+
+    private var heardIDs: Set<Int> {
+        guard !listener.heard.isEmpty else { return [] }
+        return RecallScorer.score(attempt: listener.heard, target: text).recalledTokenIDs
+    }
+
+    var body: some View {
+        let heard = heardIDs
+        let wordCount = tokens.filter(\.hasLetters).count
+        let heardCount = tokens.filter { $0.hasLetters && heard.contains($0.id) }.count
+        let complete = wordCount > 0 && heardCount == wordCount
+
+        VStack(alignment: .leading, spacing: 24) {
+            FlowLayout(spacing: 7, lineSpacing: 6) {
+                ForEach(tokens) { token in
+                    let shown = heard.contains(token.id) || peeked.contains(token.id) || !token.hasLetters
+                    BlankableReciteWord(token: token, shown: shown, spoken: heard.contains(token.id))
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.2)) { _ = peeked.insert(token.id) }
+                        }
+                        .accessibilityLabel(shown ? token.raw : "Not yet said")
+                }
+            }
+            .animation(.easeOut(duration: 0.35), value: heard)
+            .sensoryFeedback(.selection, trigger: heardCount)
+            .sensoryFeedback(.success, trigger: complete) { _, now in now }
+
+            HStack(alignment: .center) {
+                if !listener.heard.isEmpty || !peeked.isEmpty {
+                    Button("Start over") {
+                        listener.reset()
+                        withAnimation { peeked = [] }
+                    }
+                    .buttonStyle(.quiet)
+                }
+                Spacer()
+                micButton
+            }
+
+            switch listener.state {
+            case .denied:
+                note("Hidden Word needs the microphone and speech recognition. You can allow both in the Settings app.")
+            case .unavailable:
+                note("Listening isn’t available right now. Try Letters or Type.")
+            default:
+                if complete {
+                    Text("Every word, from the heart.")
+                        .font(.serifItalic(20, relativeTo: .title3))
+                        .foregroundStyle(Color.muted)
+                        .transition(.opacity)
+                }
+            }
+        }
+        .onDisappear { listener.stop() }
+        .onChange(of: complete) { _, done in if done { listener.stop() } }
+    }
+
+    private var micButton: some View {
+        let listening = listener.state == .listening
+        return Button {
+            if listening { listener.stop() } else { Task { await listener.start() } }
+        } label: {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(listening ? Color.glow : Color.ink)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: listening ? Color.glow : .clear, radius: 6)
+                Text(listening ? "Listening" : "Begin")
+            }
+        }
+        .buttonStyle(.pill(filled: !listening, wide: false))
+        .animation(.easeInOut(duration: 0.25), value: listening)
+        .accessibilityLabel(listening ? "Stop listening" : "Start listening")
+    }
+
+    private func note(_ message: String) -> some View {
+        Text(message)
+            .font(.sans(13, relativeTo: .footnote))
+            .foregroundStyle(Color.muted)
+    }
+}
+
+/// A word that is a quiet hairline until it is said, then fades in.
+private struct BlankableReciteWord: View {
+    let token: WordToken
+    let shown: Bool
+    let spoken: Bool
+
+    var body: some View {
+        Text(token.raw)
+            .font(.serif(26, relativeTo: .title2))
+            .foregroundStyle(spoken || !token.hasLetters ? Color.ink : Color.muted)
+            .padding(.vertical, 1)
+            .opacity(shown ? 1 : 0)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.hairline)
+                    .frame(height: 1)
+                    .offset(y: -6)
+                    .opacity(shown ? 0 : 1)
+            }
     }
 }
