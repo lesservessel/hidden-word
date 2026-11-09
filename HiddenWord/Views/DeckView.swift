@@ -85,6 +85,7 @@ struct VerseDetailView: View {
     @State private var editing = false
     @State private var confirmFresh = false
     @State private var confirmDelete = false
+    @State private var sharing = false
 
     var body: some View {
         ScrollView {
@@ -96,12 +97,16 @@ struct VerseDetailView: View {
                     .foregroundStyle(Color.ink)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
-                NavigationLink {
-                    PracticeView(verse: verse)
-                } label: {
-                    Text("Practice")
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        PracticeView(verse: verse)
+                    } label: {
+                        Text("Practice")
+                    }
+                    .buttonStyle(.pill(filled: true, wide: false))
+                    Button("Share") { sharing = true }
+                        .buttonStyle(.pill)
                 }
-                .buttonStyle(.pill)
                 .padding(.top, 8)
             }
             .padding(.horizontal, 24)
@@ -128,6 +133,9 @@ struct VerseDetailView: View {
         }
         .sheet(isPresented: $editing) {
             VerseEditorView(verse: verse)
+        }
+        .sheet(isPresented: $sharing) {
+            ShareVerseSheet(text: verse.text, reference: verse.displayReference)
         }
         .confirmationDialog("Start this verse fresh?", isPresented: $confirmFresh, titleVisibility: .visible) {
             Button("Start fresh") {
