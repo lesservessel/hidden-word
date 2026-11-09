@@ -465,9 +465,9 @@ struct TypeRecallView: View {
     /// A word you typed that isn't in the verse: yours, not Scripture, so lighter and struck.
     private func extraWord(_ w: String) -> some View {
         Text(w)
-            .font(.serifItalic(18, relativeTo: .body))
-            .strikethrough(true, color: Color.muted)
-            .foregroundStyle(Color.muted.opacity(0.8))
+            .font(.serif(21, relativeTo: .body, weight: .semibold))
+            .strikethrough(true, color: Color.ink)
+            .foregroundStyle(Color.ink)
     }
 
     private func verdict(for percent: Int) -> String {
