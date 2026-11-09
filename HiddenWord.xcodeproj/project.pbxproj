@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C10000000000000000000014 /* HiddenWordWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C10000000000000000000001 /* HiddenWordWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B10000000000000000000020 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -14,11 +18,33 @@
 			remoteGlobalIDString = A10000000000000000000010;
 			remoteInfo = HiddenWord;
 		};
+		C10000000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000030 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C10000000000000000000010;
+			remoteInfo = HiddenWordWidget;
+		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		C10000000000000000000013 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C10000000000000000000014 /* HiddenWordWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		B10000000000000000000001 /* HiddenWordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HiddenWordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000001 /* HiddenWord.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HiddenWord.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000001 /* HiddenWordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HiddenWordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C10000000000000000000001 /* HiddenWordWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HiddenWordWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,14 +55,16 @@
 			);
 			target = A10000000000000000000010 /* HiddenWord */;
 		};
+		C10000000000000000000002 /* Exceptions for "HiddenWordWidget" folder in "HiddenWordWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C10000000000000000000010 /* HiddenWordWidget */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B10000000000000000000003 /* HiddenWordTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = HiddenWordTests;
-			sourceTree = "<group>";
-		};
 		A10000000000000000000003 /* HiddenWord */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -45,9 +73,29 @@
 			path = HiddenWord;
 			sourceTree = "<group>";
 		};
+		B10000000000000000000003 /* HiddenWordTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = HiddenWordTests;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000003 /* HiddenWordWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C10000000000000000000002 /* Exceptions for "HiddenWordWidget" folder in "HiddenWordWidget" target */,
+			);
+			path = HiddenWordWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B10000000000000000000004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,7 +103,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A10000000000000000000004 /* Frameworks */ = {
+		C10000000000000000000004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -70,6 +118,7 @@
 			children = (
 				A10000000000000000000003 /* HiddenWord */,
 				B10000000000000000000003 /* HiddenWordTests */,
+				C10000000000000000000003 /* HiddenWordWidget */,
 				A10000000000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -79,6 +128,7 @@
 			children = (
 				A10000000000000000000001 /* HiddenWord.app */,
 				B10000000000000000000001 /* HiddenWordTests.xctest */,
+				C10000000000000000000001 /* HiddenWordWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -93,10 +143,12 @@
 				A10000000000000000000011 /* Sources */,
 				A10000000000000000000004 /* Frameworks */,
 				A10000000000000000000012 /* Resources */,
+				C10000000000000000000013 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C10000000000000000000021 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A10000000000000000000003 /* HiddenWord */,
@@ -127,6 +179,26 @@
 			productReference = B10000000000000000000001 /* HiddenWordTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C10000000000000000000010 /* HiddenWordWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C10000000000000000000030 /* Build configuration list for PBXNativeTarget "HiddenWordWidget" */;
+			buildPhases = (
+				C10000000000000000000011 /* Sources */,
+				C10000000000000000000004 /* Frameworks */,
+				C10000000000000000000012 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C10000000000000000000003 /* HiddenWordWidget */,
+			);
+			name = HiddenWordWidget;
+			productName = HiddenWordWidget;
+			productReference = C10000000000000000000001 /* HiddenWordWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -143,6 +215,9 @@
 					B10000000000000000000010 = {
 						CreatedOnToolsVersion = 27.1;
 						TestTargetID = A10000000000000000000010;
+					};
+					C10000000000000000000010 = {
+						CreatedOnToolsVersion = 27.1;
 					};
 				};
 			};
@@ -162,6 +237,7 @@
 			targets = (
 				A10000000000000000000010 /* HiddenWord */,
 				B10000000000000000000010 /* HiddenWordTests */,
+				C10000000000000000000010 /* HiddenWordWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -175,6 +251,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B10000000000000000000012 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000012 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -198,6 +281,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C10000000000000000000011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -205,6 +295,11 @@
 			isa = PBXTargetDependency;
 			target = A10000000000000000000010 /* HiddenWord */;
 			targetProxy = B10000000000000000000020 /* PBXContainerItemProxy */;
+		};
+		C10000000000000000000021 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C10000000000000000000010 /* HiddenWordWidget */;
+			targetProxy = C10000000000000000000020 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -265,6 +360,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = HiddenWord/HiddenWord.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Y7Z3GSX525;
 				ENABLE_PREVIEWS = YES;
@@ -286,6 +382,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = HiddenWord/HiddenWord.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Y7Z3GSX525;
 				ENABLE_PREVIEWS = YES;
@@ -334,6 +431,52 @@
 			};
 			name = Release;
 		};
+		C10000000000000000000040 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = HiddenWordWidget/HiddenWordWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Y7Z3GSX525;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HiddenWordWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lesservessel.HiddenWord.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		C10000000000000000000041 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = HiddenWordWidget/HiddenWordWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Y7Z3GSX525;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HiddenWordWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.lesservessel.HiddenWord.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -360,6 +503,15 @@
 			buildConfigurations = (
 				B10000000000000000000040 /* Debug */,
 				B10000000000000000000041 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C10000000000000000000030 /* Build configuration list for PBXNativeTarget "HiddenWordWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C10000000000000000000040 /* Debug */,
+				C10000000000000000000041 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

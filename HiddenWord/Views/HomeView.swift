@@ -76,6 +76,9 @@ struct HomeView: View {
             .onAppear {
                 withAnimation(.easeOut(duration: 0.8)) { appeared = true }
             }
+            // Keep the widget's copy of the deck current, in the same order as the home screen.
+            .task(id: verses.map(\.persistentModelID)) { WidgetSync.publish(verses) }
+            .onChange(of: verses.map(\.text)) { _, _ in WidgetSync.publish(verses) }
         }
     }
 
