@@ -1,14 +1,24 @@
 import SwiftUI
 import SwiftData
 
+/// One quiet screen: the vessel, today's verse, and a single way in.
+/// No counts, no streaks, nothing that reads like homework.
 struct HomeView: View {
     @Query(sort: \Verse.createdAt) private var verses: [Verse]
-    @Environment(StreakStore.self) private var streak
     @State private var sessionVerses: [Verse] = []
     @State private var showingSession = false
+    @State private var showingAdd = false
+    @State private var appeared = false
 
-    private var due: [Verse] {
-        verses.filter(\.isDueToday).sorted { $0.dueDate < $1.dueDate }
+    /// Verses ready to come back today, most overdue first. Never shown as a number.
+    private var ready: [Verse] {
+        verses.filter(\.isReadyToday).sorted { $0.dueDate < $1.dueDate }
+    }
+
+    /// For "practice anyway": the verses longest since you last spent time with them.
+    private var restful: [Verse] {
+        let sorted = verses.sorted { ($0.lastReviewed ?? .distantPast) < ($1.lastReviewed ?? .distantPast) }
+        return Array(sorted.prefix(5))
     }
 
     /// Same verse all day, rotating through the deck one per day.
@@ -20,124 +30,133 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    epigraph
+            VStack(spacing: 0) {
+                header
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
 
-                    if verses.isEmpty {
-                        ContentUnavailableView(
-                            "No verses yet",
-                            systemImage: "book.closed",
-                            description: Text("Add a verse in the Deck tab, or restore the starter verses in Settings.")
-                        )
-                    } else {
-                        stats
-                        reviewButton
-                        if let verse = verseOfTheDay {
-                            todayCard(verse)
+                GeometryReader { geo in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            VesselMark(size: 132)
+                                .padding(.bottom, 34)
+
+                            if let verse = verseOfTheDay {
+                                todayVerse(verse)
+                            } else {
+                                emptyVessel
+                            }
                         }
+                        .frame(maxWidth: 560)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 24)
+                        // Centered in the space between header and button; scrolls if a long passage needs it.
+                        .frame(maxWidth: .infinity, minHeight: geo.size.height)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
-                .padding()
+
+                if !verses.isEmpty {
+                    action
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, 18)
+                        .padding(.top, 8)
+                }
             }
-            .navigationTitle("Hidden Word")
-            // Driven by state (not a NavigationLink inside the button) so the session stays
-            // on screen when the last due verse is graded and the button is swapped out.
+            .opacity(appeared ? 1 : 0)
+            .background { PaperBackground() }
+            .toolbar(.hidden, for: .navigationBar)
+            // Driven by state so the session stays on screen as verses are let go.
             .navigationDestination(isPresented: $showingSession) {
                 ReviewSessionView(verses: sessionVerses)
             }
+            .sheet(isPresented: $showingAdd) {
+                VerseEditorView(verse: nil)
+            }
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.8)) { appeared = true }
+            }
         }
     }
 
-    private var epigraph: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("“I have stored up your word in my heart, that I might not sin against you.”")
-                .font(.system(.body, design: .serif).italic())
-            Text("Psalm 119:11")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    // MARK: Pieces
+
+    /// The site's header: wordmark left, spaced-capital links right.
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Hidden Word")
+                .font(.serif(25, relativeTo: .title2, weight: .medium))
+                .foregroundStyle(Color.ink)
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            HStack(spacing: 18) {
+                NavigationLink { DeckView() } label: { Eyebrow("Verses") }
+                NavigationLink { SettingsView() } label: { Eyebrow("Settings") }
+            }
         }
+        .frame(minHeight: 44)
     }
 
-    private var stats: some View {
-        let daysStreak = streak.displayStreak()
-        return HStack(spacing: 12) {
-            StatTile(value: "\(due.count)", label: "Due today", systemImage: "tray.full")
-            StatTile(
-                value: "\(daysStreak)",
-                label: "Day streak",
-                systemImage: streak.practicedToday() ? "flame.fill" : "flame"
-            )
-            StatTile(value: "\(verses.filter(\.isMastered).count)", label: "Mastered", systemImage: "seal")
+    private func todayVerse(_ verse: Verse) -> some View {
+        NavigationLink {
+            PracticeView(verse: verse)
+        } label: {
+            VStack(spacing: 18) {
+                Eyebrow("Today")
+                Text("“\(verse.text)”")
+                    .font(.serifItalic(25, relativeTo: .title2))
+                    .lineSpacing(3)
+                    .foregroundStyle(Color.ink)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(9)
+                    .fixedSize(horizontal: false, vertical: true)
+                Eyebrow(verse.displayReference)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens this verse to practice")
+    }
+
+    private var emptyVessel: some View {
+        VStack(spacing: 20) {
+            Text("An empty vessel.")
+                .font(.serif(30, relativeTo: .title, weight: .medium))
+                .foregroundStyle(Color.ink)
+            Text("Paste a verse from any Bible app to begin.")
+                .font(.serifItalic(20, relativeTo: .title3))
+                .foregroundStyle(Color.muted)
+                .multilineTextAlignment(.center)
+            Button("Add a verse") { showingAdd = true }
+                .buttonStyle(.pill)
+                .padding(.top, 10)
         }
     }
 
     @ViewBuilder
-    private var reviewButton: some View {
-        if due.isEmpty {
-            Label("All caught up for today.", systemImage: "checkmark.seal")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    private var action: some View {
+        if ready.isEmpty {
+            // The quiet rest state: nothing scheduled, nothing owed.
+            VStack(spacing: 4) {
+                Text("Rest. Come back tomorrow.")
+                    .font(.serifItalic(21, relativeTo: .title3))
+                    .foregroundStyle(Color.muted)
+                    .frame(minHeight: 50)
+                Button("Practice anyway") { start(restful) }
+                    .buttonStyle(.quiet)
+            }
         } else {
-            Button {
-                sessionVerses = due
-                showingSession = true
-            } label: {
-                Label("Start review · \(due.count) due", systemImage: "play.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            Button("Start review") { start(ready) }
+                .buttonStyle(.pill(filled: true, wide: true))
+                .frame(maxWidth: 360)
+                .sensoryFeedback(.impact(weight: .light), trigger: showingSession)
         }
     }
 
-    private func todayCard(_ verse: Verse) -> some View {
-        NavigationLink {
-            PracticeView(verse: verse)
-        } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("TODAY’S VERSE")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(verse.text)
-                    .font(.system(.title3, design: .serif))
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(.primary)
-                Text(verse.displayReference)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-struct StatTile: View {
-    let value: String
-    let label: String
-    let systemImage: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Image(systemName: systemImage)
-                .foregroundStyle(Color.accentColor)
-            Text(value)
-                .font(.title.weight(.bold))
-                .monospacedDigit()
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-        .accessibilityElement(children: .combine)
+    private func start(_ verses: [Verse]) {
+        guard !verses.isEmpty else { return }
+        sessionVerses = verses
+        showingSession = true
     }
 }

@@ -25,7 +25,7 @@ enum ReminderService {
 
         let content = UNMutableNotificationContent()
         content.title = "Hidden Word"
-        content.body = "A few minutes in the Word. Your verses are waiting."
+        content.body = "A quiet minute with the Word."
         content.sound = .default
 
         var components = DateComponents()

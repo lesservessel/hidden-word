@@ -29,8 +29,17 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>CormorantGaramond.ttf</string>
+		<string>CormorantGaramond-Italic.ttf</string>
+		<string>Inter.ttf</string>
+	</array>
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIColorName</key>
+		<string>Paper</string>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

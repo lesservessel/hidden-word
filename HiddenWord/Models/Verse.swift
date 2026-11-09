@@ -10,7 +10,7 @@ final class Verse {
     var translation: String = ""
     /// Leitner box, 1...Leitner.maxBox. New verses start in box 1.
     var box: Int = 1
-    /// Start of the day this verse is next due.
+    /// Start of the day this verse next comes back.
     var dueDate: Date = Date.now
     var lastReviewed: Date?
     var reviewCount: Int = 0
@@ -36,8 +36,8 @@ final class Verse {
         self.isStarter = isStarter
     }
 
-    var isDueToday: Bool { Leitner.isDue(dueDate: dueDate) }
-    var isMastered: Bool { box >= Leitner.maxBox }
+    /// Ready to come back today. Used only to choose what a session holds; never shown as a count.
+    var isReadyToday: Bool { Leitner.isDue(dueDate: dueDate) }
 
     var displayReference: String {
         translation.isEmpty ? reference : "\(reference) \(translation)"

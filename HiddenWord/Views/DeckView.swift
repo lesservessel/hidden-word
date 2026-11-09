@@ -1,45 +1,55 @@
 import SwiftUI
 import SwiftData
 
+/// Every verse you're hiding away, newest last. No progress marks, no dates.
 struct DeckView: View {
     @Query(sort: \Verse.createdAt) private var verses: [Verse]
     @Environment(\.modelContext) private var context
     @State private var showingAdd = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                ForEach(verses) { verse in
-                    NavigationLink {
-                        VerseDetailView(verse: verse)
-                    } label: {
-                        VerseRow(verse: verse)
-                    }
+        List {
+            ForEach(verses) { verse in
+                NavigationLink {
+                    VerseDetailView(verse: verse)
+                } label: {
+                    VerseRow(verse: verse)
                 }
-                .onDelete(perform: delete)
+                .listRowBackground(Color.clear)
+                .listRowSeparatorTint(Color.hairline.opacity(0.6))
+                .listRowInsets(EdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 20))
             }
-            .overlay {
-                if verses.isEmpty {
-                    ContentUnavailableView(
-                        "No verses",
-                        systemImage: "book.closed",
-                        description: Text("Tap + to paste a verse from your Bible app.")
-                    )
-                }
-            }
-            .navigationTitle("Deck")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingAdd = true
-                    } label: {
-                        Label("Add verse", systemImage: "plus")
-                    }
+            .onDelete(perform: delete)
+        }
+        .listStyle(.plain)
+        .overlay {
+            if verses.isEmpty {
+                VStack(spacing: 18) {
+                    VesselMark(size: 96, brightness: 0.2, breathing: false)
+                    Text("No verses yet.")
+                        .font(.serif(26, relativeTo: .title2, weight: .medium))
+                        .foregroundStyle(Color.ink)
+                    Button("Add a verse") { showingAdd = true }
+                        .buttonStyle(.pill)
                 }
             }
-            .sheet(isPresented: $showingAdd) {
-                VerseEditorView(verse: nil)
+        }
+        .paperScreen()
+        .serifTitle("Verses")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingAdd = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 17, weight: .light))
+                        .foregroundStyle(Color.ink)
+                }
+                .accessibilityLabel("Add a verse")
             }
+        }
+        .sheet(isPresented: $showingAdd) {
+            VerseEditorView(verse: nil)
         }
     }
 
@@ -55,103 +65,84 @@ struct VerseRow: View {
     let verse: Verse
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(verse.displayReference)
-                    .font(.headline)
-                Spacer()
-                BoxDots(box: verse.box)
-            }
+        VStack(alignment: .leading, spacing: 6) {
+            Text(verse.reference)
+                .font(.serif(22, relativeTo: .title3, weight: .medium))
+                .foregroundStyle(Color.ink)
             Text(verse.text)
-                .font(.system(.subheadline, design: .serif))
-                .foregroundStyle(.secondary)
+                .font(.serif(18, relativeTo: .body))
+                .foregroundStyle(Color.muted)
                 .lineLimit(2)
-            Text(dueText(for: verse))
-                .font(.caption)
-                .foregroundStyle(verse.isDueToday ? Color.accentColor : Color.secondary)
         }
         .padding(.vertical, 2)
-    }
-}
-
-func dueText(for verse: Verse) -> String {
-    if verse.isDueToday { return "Due today" }
-    return "Due " + verse.dueDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
-}
-
-/// Six dots, filled up to the verse's Leitner box.
-struct BoxDots: View {
-    let box: Int
-
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(1...Leitner.maxBox, id: \.self) { level in
-                Circle()
-                    .fill(level <= box ? Color.accentColor : Color.secondary.opacity(0.25))
-                    .frame(width: 6, height: 6)
-            }
-        }
-        .accessibilityElement()
-        .accessibilityLabel("Box \(box) of \(Leitner.maxBox)")
     }
 }
 
 struct VerseDetailView: View {
     let verse: Verse
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @State private var editing = false
-    @State private var confirmReset = false
-
-    init(verse: Verse) {
-        self.verse = verse
-    }
+    @State private var confirmFresh = false
+    @State private var confirmDelete = false
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                Eyebrow(verse.displayReference)
                 Text(verse.text)
-                    .font(.system(.title3, design: .serif))
+                    .font(.verse)
+                    .lineSpacing(4)
+                    .foregroundStyle(Color.ink)
                     .textSelection(.enabled)
-                    .padding(.vertical, 4)
-            } header: {
-                Text(verse.displayReference)
-            }
-
-            Section {
+                    .fixedSize(horizontal: false, vertical: true)
                 NavigationLink {
                     PracticeView(verse: verse)
                 } label: {
-                    Label("Practice now", systemImage: "play.fill")
+                    Text("Practice")
                 }
+                .buttonStyle(.pill)
+                .padding(.top, 8)
             }
-
-            Section("Progress") {
-                LabeledContent("Box") { BoxDots(box: verse.box) }
-                LabeledContent("Next review", value: dueText(for: verse))
-                LabeledContent("Reviews", value: "\(verse.reviewCount)")
-                if let last = verse.lastReviewed {
-                    LabeledContent("Last reviewed", value: last.formatted(date: .abbreviated, time: .omitted))
-                }
-                Button("Reset progress", role: .destructive) { confirmReset = true }
-            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
+            .frame(maxWidth: 640, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
-        .navigationTitle(verse.reference)
-        .navigationBarTitleDisplayMode(.inline)
+        .paperScreen()
+        .serifTitle(verse.reference)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit") { editing = true }
+                Menu {
+                    Button("Edit", systemImage: "pencil") { editing = true }
+                    Button("Start fresh", systemImage: "arrow.counterclockwise") { confirmFresh = true }
+                    Button("Delete", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 17, weight: .light))
+                        .foregroundStyle(Color.ink)
+                }
+                .accessibilityLabel("More")
             }
         }
         .sheet(isPresented: $editing) {
             VerseEditorView(verse: verse)
         }
-        .confirmationDialog("Reset this verse?", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("Reset", role: .destructive) {
+        .confirmationDialog("Start this verse fresh?", isPresented: $confirmFresh, titleVisibility: .visible) {
+            Button("Start fresh") {
                 Leitner.reset(verse)
                 try? context.save()
             }
         } message: {
-            Text("It goes back to box 1 and is due today.")
+            Text("It will come back often again, as if you just added it.")
+        }
+        .confirmationDialog("Delete this verse?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                context.delete(verse)
+                try? context.save()
+                dismiss()
+            }
         }
     }
 }

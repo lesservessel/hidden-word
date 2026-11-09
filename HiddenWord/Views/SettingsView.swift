@@ -7,7 +7,6 @@ struct SettingsView: View {
     @AppStorage("reminder.minute") private var reminderMinute = 0
 
     @Environment(\.modelContext) private var context
-    @Environment(StreakStore.self) private var streak
     @Query private var verses: [Verse]
 
     @State private var showDenied = false
@@ -34,68 +33,72 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationStack {
             Form {
+                Group {
                 Section {
                     Toggle("Daily reminder", isOn: $reminderEnabled)
                     if reminderEnabled {
                         DatePicker("Time", selection: reminderTime, displayedComponents: .hourAndMinute)
                     }
                 } header: {
-                    Text("Reminder")
+                    FormHeader("Reminder")
                 } footer: {
-                    Text("A notification scheduled on this iPhone. Nothing is sent anywhere.")
+                    FormFooter("A gentle notification from this iPhone. Nothing is sent anywhere.")
                 }
 
                 Section {
-                    LabeledContent("Current streak", value: "\(streak.displayStreak()) days")
-                    LabeledContent("Best streak", value: "\(streak.best) days")
-                    LabeledContent("Verses", value: "\(verses.count)")
                     Button("Restore starter verses") {
                         let added = StarterDeck.insertMissing(context: context)
                         restoreMessage = added == 0
                             ? "All starter verses are already in your deck."
                             : "Added \(added) starter verse\(added == 1 ? "" : "s")."
                     }
-                    Button("Reset all progress", role: .destructive) { confirmReset = true }
+                    Button("Start every verse fresh") { confirmReset = true }
                 } header: {
-                    Text("Progress")
+                    FormHeader("Verses")
                 } footer: {
                     if let restoreMessage {
-                        Text(restoreMessage)
+                        FormFooter(restoreMessage)
                     }
                 }
 
-                Section("How review works") {
-                    Text("Each verse sits in one of six boxes. Got it moves it up a box; missed sends it back to box 1. Boxes come due every 1, 2, 4, 7, 14 and 30 days.")
-                        .font(.footnote)
+                Section {
+                    Text("Verses you mark Hidden come back less and less often. Verses you mark Again soon come back tomorrow. When nothing is ready, rest.")
+                        .font(.serif(19, relativeTo: .body))
+                        .foregroundStyle(Color.ink)
+                        .padding(.vertical, 4)
+                } header: {
+                    FormHeader("How it works")
                 }
 
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("“I have stored up your word in my heart, that I might not sin against you.”")
-                            .font(.system(.body, design: .serif).italic())
-                        Text("Psalm 119:11")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.serifItalic(20, relativeTo: .body))
+                        Eyebrow("Psalm 119:11")
                     }
                     .padding(.vertical, 4)
                     LabeledContent("Version", value: appVersion)
                 } header: {
-                    Text("About Hidden Word")
+                    FormHeader("About")
                 }
 
                 Section {
                     Text("Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .font(.sans(12, relativeTo: .footnote))
+                        .foregroundStyle(Color.muted)
                 } header: {
-                    Text("Scripture")
+                    FormHeader("Scripture")
                 } footer: {
-                    Text("Verses you add yourself keep whatever translation you paste.")
+                    FormFooter("Verses you add yourself keep whatever translation you paste.")
                 }
+                }
+                .listRowBackground(Color.wash)
+                .font(.serif(19, relativeTo: .body))
+                .foregroundStyle(Color.ink)
             }
-            .navigationTitle("Settings")
+            .paperScreen()
+            .serifTitle("Settings")
             .onChange(of: reminderEnabled) { _, isOn in
                 if isOn {
                     Task {
@@ -119,19 +122,17 @@ struct SettingsView: View {
             } message: {
                 Text("To get a daily reminder, allow notifications for Hidden Word in the Settings app.")
             }
-            .confirmationDialog("Reset all progress?", isPresented: $confirmReset, titleVisibility: .visible) {
-                Button("Reset", role: .destructive) { resetAll() }
+            .confirmationDialog("Start every verse fresh?", isPresented: $confirmReset, titleVisibility: .visible) {
+                Button("Start fresh") { resetAll() }
             } message: {
-                Text("Every verse goes back to box 1 and is due today, and your streak starts over. Your verses are kept.")
+                Text("Every verse will come back often again, as if you just added it. Your verses are kept.")
             }
-        }
     }
 
     private func resetAll() {
         for verse in verses {
             Leitner.reset(verse)
         }
-        streak.reset()
         try? context.save()
     }
 }

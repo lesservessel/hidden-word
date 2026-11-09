@@ -27,6 +27,7 @@ struct VerseEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Group {
                 Section {
                     TextField("Reference, e.g. Psalm 119:11", text: $reference)
                         .textInputAutocapitalization(.words)
@@ -37,8 +38,9 @@ struct VerseEditorView: View {
 
                 Section {
                     TextEditor(text: $text)
-                        .font(.system(.body, design: .serif))
-                        .frame(minHeight: 160)
+                        .font(.serif(21, relativeTo: .body))
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 180)
                         .onChange(of: text) { old, new in textChanged(from: old, to: new) }
                     PasteButton(payloadType: String.self) { strings in
                         let pasted = strings.first ?? ""
@@ -46,16 +48,23 @@ struct VerseEditorView: View {
                             applyPaste(pasted)
                         }
                     }
+                    .buttonBorderShape(.capsule)
+                    .tint(Color.ink)
+                    .labelStyle(.titleAndIcon)
                 } header: {
-                    Text("Verse text")
+                    FormHeader("The words")
                 } footer: {
-                    Text("Copy a verse or passage from any Bible app or website, then tap Paste. Verse numbers, headings and footnote marks are removed, and the reference and translation are filled in when they come along.")
+                    FormFooter("Copy a verse or passage from any Bible app or website, then tap Paste. Verse numbers, headings and footnote marks are removed, and the reference and translation are filled in when they come along.")
                 }
+                }
+                .listRowBackground(Color.wash)
+                .font(.serif(19, relativeTo: .body))
+                .foregroundStyle(Color.ink)
             }
+            .paperScreen()
             .scrollDismissesKeyboard(.interactively)
             .keyboardDoneButton()
-            .navigationTitle(verse == nil ? "Add Verse" : "Edit Verse")
-            .navigationBarTitleDisplayMode(.inline)
+            .serifTitle(verse == nil ? "Add a verse" : "Edit verse")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

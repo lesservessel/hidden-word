@@ -3,33 +3,29 @@ import SwiftData
 
 @main
 struct HiddenWordApp: App {
-    @State private var streak = StreakStore()
+    init() {
+        Appearance.apply()
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environment(streak)
+                .tint(Color.ink)
         }
         .modelContainer(for: Verse.self)
     }
 }
 
+/// No tab bar: one home screen, with Verses and Settings a quiet link away.
 struct RootView: View {
     @Environment(\.modelContext) private var context
 
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem { Label("Today", systemImage: "sun.max") }
-            DeckView()
-                .tabItem { Label("Deck", systemImage: "books.vertical") }
-            SettingsView()
-                .tabItem { Label("Settings", systemImage: "gearshape") }
-        }
-        .task {
-            StarterDeck.seedIfNeeded(context: context)
-            repairGarbledVerses()
-        }
+        HomeView()
+            .task {
+                StarterDeck.seedIfNeeded(context: context)
+                repairGarbledVerses()
+            }
     }
 
     /// Fixes verses saved before the paste cleanup repaired garbled quotes ("person‚Äôs").
