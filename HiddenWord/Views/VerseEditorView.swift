@@ -99,13 +99,9 @@ struct VerseEditorView: View {
                 .foregroundStyle(Color.muted)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            PasteButton(payloadType: String.self) { strings in
-                let pasted = strings.first ?? ""
-                Task { @MainActor in withAnimation { applyPaste(pasted) } }
+            SystemPasteButton(size: .large, tone: .ink, placeholderHeight: 50) { pasted in
+                withAnimation { applyPaste(pasted) }
             }
-            .buttonBorderShape(.capsule)
-            .controlSize(.large)
-            .tint(Color.ink)
             .labelStyle(.titleAndIcon)
             .padding(.top, 4)
 
@@ -158,13 +154,9 @@ struct VerseEditorView: View {
                     Eyebrow("The words")
                     Spacer()
                     if !isEditing {
-                        PasteButton(payloadType: String.self) { strings in
-                            let pasted = strings.first ?? ""
-                            Task { @MainActor in withAnimation { applyPaste(pasted, replacing: true) } }
+                        SystemPasteButton(size: .mini, tone: .muted, placeholderHeight: 24) { pasted in
+                            withAnimation { applyPaste(pasted, replacing: true) }
                         }
-                        .buttonBorderShape(.capsule)
-                        .controlSize(.mini)
-                        .tint(Color.muted)
                         .labelStyle(.iconOnly)
                         .accessibilityLabel("Paste again")
                     }
@@ -270,5 +262,72 @@ struct VerseEditorView: View {
         guard cleaned.text != new else { return }
         // Apply after the text field finishes its own paste, or it can overwrite our change.
         DispatchQueue.main.async { applyPaste(new) }
+    }
+}
+
+// MARK: - System paste button
+
+/// Apple's own `PasteButton`, set up so iOS agrees to draw it.
+///
+/// The paste control is drawn by the system, not by the app, and iOS leaves it blank when it
+/// doesn't trust how it is shown. Two things here tripped that on iOS 26:
+/// - Inserting it while the sheet is still sliding up. It is added once the sheet has settled.
+/// - A tint the app computes itself (`Color.ink` resolves through a UIColor closure). It gets
+///   plain, fixed colors for the current appearance instead, with the label color to match.
+struct SystemPasteButton: View {
+    enum Tone { case ink, muted }
+
+    let size: ControlSize
+    let tone: Tone
+    /// Space held while waiting, so the layout doesn't jump when the button arrives.
+    let placeholderHeight: CGFloat
+    let onPaste: (String) -> Void
+
+    @Environment(\.colorScheme) private var scheme
+    @State private var ready = false
+
+    /// Long enough for the sheet's presentation to finish.
+    private static let settleDelay: Duration = .milliseconds(450)
+
+    var body: some View {
+        Group {
+            if ready {
+                PasteButton(payloadType: String.self) { strings in
+                    let pasted = strings.first ?? ""
+                    Task { @MainActor in onPaste(pasted) }
+                }
+                .buttonBorderShape(.capsule)
+                .controlSize(size)
+                .tint(background)
+                .foregroundStyle(foreground)
+            } else {
+                Color.clear.frame(width: 1, height: placeholderHeight)
+            }
+        }
+        .task {
+            guard !ready else { return }
+            try? await Task.sleep(for: Self.settleDelay)
+            // No animation: the control must not be added mid-fade.
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) { ready = true }
+        }
+    }
+
+    // Fixed sRGB values matching Theme.swift (ink #141413, paper #FAF9F5, muted #5E5D59 / #B0AEA5).
+    private var background: Color {
+        switch (tone, scheme) {
+        case (.ink, .dark): return Color(.sRGB, red: 0xFA / 255, green: 0xF9 / 255, blue: 0xF5 / 255)
+        case (.ink, _): return Color(.sRGB, red: 0x14 / 255, green: 0x14 / 255, blue: 0x13 / 255)
+        case (.muted, .dark): return Color(.sRGB, red: 0xB0 / 255, green: 0xAE / 255, blue: 0xA5 / 255)
+        case (.muted, _): return Color(.sRGB, red: 0x5E / 255, green: 0x5D / 255, blue: 0x59 / 255)
+        }
+    }
+
+    /// Paper on a dark button, ink on a light one, so the label always contrasts.
+    private var foreground: Color {
+        scheme == .dark
+            ? Color(.sRGB, red: 0x14 / 255, green: 0x14 / 255, blue: 0x13 / 255)
+            : Color(.sRGB, red: 0xFA / 255, green: 0xF9 / 255, blue: 0xF5 / 255)
     }
 }
