@@ -47,6 +47,11 @@ enum StarterDeck {
 
     private static let seededKey = "didSeedStarterDeck"
 
+    static var wasSeeded: Bool { UserDefaults.standard.bool(forKey: seededKey) }
+
+    /// Records that the starter deck was offered, without adding it.
+    static func markSeeded() { UserDefaults.standard.set(true, forKey: seededKey) }
+
     /// Inserts the starter deck once, on first launch.
     static func seedIfNeeded(context: ModelContext) {
         let defaults = UserDefaults.standard

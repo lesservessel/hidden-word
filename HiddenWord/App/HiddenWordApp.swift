@@ -19,13 +19,27 @@ struct HiddenWordApp: App {
 /// No tab bar: one home screen, with Verses and Settings a quiet link away.
 struct RootView: View {
     @Environment(\.modelContext) private var context
+    @AppStorage("welcomed") private var welcomed = false
 
     var body: some View {
-        HomeView()
-            .task {
-                StarterDeck.seedIfNeeded(context: context)
-                repairGarbledVerses()
+        ZStack {
+            if welcomed {
+                HomeView()
+                    .transition(.opacity)
+            } else {
+                WelcomeView { withStarterVerses in
+                    if withStarterVerses { StarterDeck.seedIfNeeded(context: context) }
+                    else { StarterDeck.markSeeded() }
+                    withAnimation(.easeInOut(duration: 0.6)) { welcomed = true }
+                }
+                .transition(.opacity)
             }
+        }
+        .task {
+            // People who used the app before the welcome existed already have their verses.
+            if !welcomed, StarterDeck.wasSeeded { welcomed = true }
+            repairGarbledVerses()
+        }
     }
 
     /// Fixes verses saved before the paste cleanup repaired garbled quotes ("person‚Äôs").
