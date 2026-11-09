@@ -18,7 +18,19 @@ enum PassageCleaner {
         var text: String
         var reference: String?
         var translation: String?
+        /// The passage split at its verse numbers, when it had two or more within one chapter.
+        /// Empty for a single verse or a paste without verse numbers.
+        var verses: [VerseSegment] = []
     }
+
+    struct VerseSegment: Equatable {
+        let number: Int
+        let text: String
+    }
+
+    /// Marks where a verse number stood, so the passage can be split there later.
+    private static let markOpen = "\u{E000}", markClose = "\u{E001}"
+    private static func mark(_ n: Int) -> String { " \(markOpen)\(n)\(markClose) " }
 
     /// Returns true for a correctly spelled word. Used to spot footnote letters that lost their
     /// brackets and stuck to a word ("servanta" -> "servant"). Nil skips that step.
@@ -75,16 +87,33 @@ enum PassageCleaner {
             var l = line
             // Footnote and cross-reference markers: [a], [bc], (A), (BC).
             l = replace(#"\[[a-z]{1,2}\]|\([A-Z]{1,2}\)"#, in: l, with: "")
-            // Superscript verse numbers.
-            l = replace("[\u{2070}\u{00B9}\u{00B2}\u{00B3}\u{2074}-\u{2079}]+", in: l, with: " ")
             return l
         }
 
-        // Bracketed verse numbers: [12]
+        // Superscript verse numbers: ²³ -> 23.
         var numbers: [Int] = []
         lines = lines.map { line in
-            numbers += allMatches(#"\[(\d{1,3})\]"#, in: line).compactMap { Int($0.groups[0]) }
-            return replace(#"\[\d{1,3}\]"#, in: line, with: " ")
+            var l = line
+            for m in allMatches("([\u{2070}\u{00B9}\u{00B2}\u{00B3}\u{2074}-\u{2079}]+)", in: line).reversed() {
+                let digits = String(m.groups[0].compactMap { superscriptDigits[$0] })
+                if let n = Int(digits) { numbers.append(n); l.replaceSubrange(m.range, with: mark(n)) }
+                else { l.replaceSubrange(m.range, with: " ") }
+            }
+            return l
+        }
+        numbers.sort()
+
+        // Bracketed verse numbers: [12]
+        if numbers.isEmpty {
+            lines = lines.map { line in
+                var l = line
+                for m in allMatches(#"\[(\d{1,3})\]"#, in: line).reversed() {
+                    let n = Int(m.groups[0]) ?? 0
+                    numbers.insert(n, at: 0)
+                    l.replaceSubrange(m.range, with: mark(n))
+                }
+                return l
+            }
         }
 
         // Bare verse numbers ("2 Count", "2Count").
@@ -96,8 +125,10 @@ enum PassageCleaner {
             spansChapters = stripped.spansChapters
         }
 
-        var text = tidy(lines.joined(separator: " "))
-        if let isWord { text = unstickFootnoteLetters(text, isWord: isWord) }
+        var marked = tidy(lines.joined(separator: " "))
+        if let isWord { marked = unstickFootnoteLetters(marked, isWord: isWord) }
+        let text = tidy(replace("\(markOpen)\\d+\(markClose)", in: marked, with: " "))
+        let verses = spansChapters ? [] : splitVerses(marked)
 
         // "James 1" + verses 1...27 -> "James 1:1-27"
         if let ref = reference, !ref.contains(":"), !spansChapters,
@@ -105,7 +136,35 @@ enum PassageCleaner {
             reference = lo == hi ? "\(ref):\(lo)" : "\(ref):\(lo)-\(hi)"
         }
 
-        return Result(text: text, reference: reference, translation: translation)
+        return Result(text: text, reference: reference, translation: translation, verses: verses)
+    }
+
+    private static let superscriptDigits: [Character: Character] = [
+        "\u{2070}": "0", "\u{00B9}": "1", "\u{00B2}": "2", "\u{00B3}": "3", "\u{2074}": "4",
+        "\u{2075}": "5", "\u{2076}": "6", "\u{2077}": "7", "\u{2078}": "8", "\u{2079}": "9",
+    ]
+
+    /// Splits marked text at each verse mark. Words before the first mark join the first verse.
+    private static func splitVerses(_ marked: String) -> [VerseSegment] {
+        let marks = allMatches("\(markOpen)(\\d+)\(markClose)", in: marked)
+        guard marks.count >= 2 else { return [] }
+        var segments: [VerseSegment] = []
+        // Words before the first number: the tail of the verse before it when the selection
+        // started mid-verse, otherwise a heading-like line that belongs with the first verse.
+        let lead = tidy(String(marked[marked.startIndex..<marks[0].range.lowerBound]))
+        let firstNumber = Int(marks[0].groups[0]) ?? 1
+        if !lead.isEmpty && firstNumber > 1 {
+            segments.append(VerseSegment(number: firstNumber - 1, text: lead))
+        }
+        for (i, m) in marks.enumerated() {
+            let end = i + 1 < marks.count ? marks[i + 1].range.lowerBound : marked.endIndex
+            var body = String(marked[m.range.upperBound..<end])
+            if i == 0 && firstNumber <= 1 { body = lead + " " + body }
+            let clean = tidy(body)
+            guard let n = Int(m.groups[0]), !clean.isEmpty else { continue }
+            segments.append(VerseSegment(number: n, text: clean))
+        }
+        return segments.count >= 2 ? segments : []
     }
 
     // MARK: - Garbled characters
@@ -239,7 +298,7 @@ enum PassageCleaner {
         }
 
         var result = lines
-        for c in picked.reversed() { result[c.line].replaceSubrange(c.match.range, with: " ") }
+        for (c, verse) in zip(picked, verses).reversed() { result[c.line].replaceSubrange(c.match.range, with: mark(verse)) }
         return (result, verses, spansChapters)
     }
 
