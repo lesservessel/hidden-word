@@ -6,10 +6,20 @@ struct DeckView: View {
     @Query(sort: \Verse.createdAt) private var verses: [Verse]
     @Environment(\.modelContext) private var context
     @State private var showingAdd = false
+    @State private var query = ""
+
+    /// Matches the reference or the words, ignoring case and accents.
+    private var shown: [Verse] {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return verses }
+        return verses.filter {
+            $0.reference.localizedStandardContains(q) || $0.text.localizedStandardContains(q)
+        }
+    }
 
     var body: some View {
         List {
-            ForEach(verses) { verse in
+            ForEach(shown) { verse in
                 NavigationLink {
                     VerseDetailView(verse: verse)
                 } label: {
@@ -22,6 +32,14 @@ struct DeckView: View {
             .onDelete(perform: delete)
         }
         .listStyle(.plain)
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search the verses")
+        .overlay {
+            if !verses.isEmpty && shown.isEmpty {
+                Text("Nothing matches “\(query)”.")
+                    .font(.serifItalic(20, relativeTo: .title3))
+                    .foregroundStyle(Color.muted)
+            }
+        }
         .overlay {
             if verses.isEmpty {
                 VStack(spacing: 18) {
@@ -54,8 +72,9 @@ struct DeckView: View {
     }
 
     private func delete(at offsets: IndexSet) {
+        let list = shown
         for index in offsets {
-            context.delete(verses[index])
+            context.delete(list[index])
         }
         try? context.save()
     }
