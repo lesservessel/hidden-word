@@ -5,24 +5,36 @@ import SwiftData
 struct ReviewSessionView: View {
     @State private var queue: [Verse]
     @State private var index = 0
+    /// Verses missed once this session come back at the end, a single time.
+    @State private var secondLooks: Set<PersistentIdentifier> = []
     @State private var lit = false
     @Environment(\.dismiss) private var dismiss
+
+    private let originalCount: Int
 
     init(verses: [Verse]) {
         // A snapshot: letting a verse go reschedules it, which must not reshuffle this session.
         _queue = State(initialValue: verses)
+        originalCount = verses.count
     }
 
     var body: some View {
         ZStack {
             if index < queue.count {
+                let verse = queue[index]
+                let isSecondLook = index >= originalCount
                 PracticeView(
-                    verse: queue[index],
-                    progress: Double(index) / Double(max(queue.count, 1))
-                ) { _ in
+                    verse: verse,
+                    progress: Double(index) / Double(max(queue.count, 1)),
+                    recordsGrade: !isSecondLook
+                ) { remembered in
+                    if !remembered, !isSecondLook, !secondLooks.contains(verse.persistentModelID) {
+                        secondLooks.insert(verse.persistentModelID)
+                        queue.append(verse)
+                    }
                     withAnimation(.easeInOut(duration: 0.35)) { index += 1 }
                 }
-                .id(queue[index].persistentModelID)
+                .id("\(verse.persistentModelID.hashValue)-\(index)")
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .offset(y: 12)),
                     removal: .opacity

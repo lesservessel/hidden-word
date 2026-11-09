@@ -40,6 +40,8 @@ struct PracticeView: View {
     let verse: Verse
     /// 0...1 through a session, shown as a hairline. Nil outside a session.
     let progress: Double?
+    /// False for a second look within the same session: the first answer already set the schedule.
+    let recordsGrade: Bool
     let onGraded: ((Bool) -> Void)?
 
     /// Starts where this verse needs it (see `PracticeMode.suggested`); you can still switch.
@@ -52,9 +54,10 @@ struct PracticeView: View {
     /// against this verse again or skip the next one.
     @State private var settled = false
 
-    init(verse: Verse, progress: Double? = nil, onGraded: ((Bool) -> Void)? = nil) {
+    init(verse: Verse, progress: Double? = nil, recordsGrade: Bool = true, onGraded: ((Bool) -> Void)? = nil) {
         self.verse = verse
         self.progress = progress
+        self.recordsGrade = recordsGrade
         self.onGraded = onGraded
         _mode = State(initialValue: PracticeMode.suggested(for: verse.box))
     }
@@ -129,8 +132,10 @@ struct PracticeView: View {
     private func grade(_ remembered: Bool) {
         guard !settled else { return }
         settled = true
-        Leitner.apply(remembered: remembered, to: verse)
-        try? context.save()
+        if recordsGrade {
+            Leitner.apply(remembered: remembered, to: verse)
+            try? context.save()
+        }
         if remembered { graded += 1 }
         if let onGraded {
             onGraded(remembered)
