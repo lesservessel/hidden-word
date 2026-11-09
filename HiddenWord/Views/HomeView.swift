@@ -83,18 +83,34 @@ struct HomeView: View {
 
     /// The site's header: wordmark left, spaced-capital links right.
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("Hidden Word")
-                .font(.serif(25, relativeTo: .title2, weight: .medium))
-                .foregroundStyle(Color.ink)
-                .accessibilityAddTraits(.isHeader)
-            Spacer()
-            HStack(spacing: 18) {
-                NavigationLink { DeckView() } label: { Eyebrow("Verses") }
-                NavigationLink { SettingsView() } label: { Eyebrow("Settings") }
+        // Side by side when it fits; at very large text sizes the links drop below the name.
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline) {
+                wordmark.fixedSize()
+                Spacer(minLength: 16)
+                links.fixedSize()
             }
+            VStack(alignment: .leading, spacing: 10) {
+                wordmark
+                links
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minHeight: 44)
+    }
+
+    private var wordmark: some View {
+        Text("Hidden Word")
+            .font(.serif(25, relativeTo: .title2, weight: .medium))
+            .foregroundStyle(Color.ink)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private var links: some View {
+        HStack(spacing: 18) {
+            NavigationLink { DeckView() } label: { Eyebrow("Verses").frame(minHeight: 44) }
+            NavigationLink { SettingsView() } label: { Eyebrow("Settings").frame(minHeight: 44) }
+        }
     }
 
     private func todayVerse(_ verse: Verse) -> some View {

@@ -74,6 +74,10 @@ struct Eyebrow: View {
             .font(.sans(11, relativeTo: .caption2, weight: .medium))
             .tracking(2.6)
             .foregroundStyle(color)
+            // Spaced capitals must never break inside a word; shrink a little instead.
+            .lineLimit(2)
+            .minimumScaleFactor(0.7)
+            .allowsTightening(true)
     }
 }
 
