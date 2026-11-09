@@ -1,0 +1,9 @@
+{
+  "id" : "afbeb306-92bc-4552-b9db-800b3e9fb46b",
+  "targets" : [
+    {
+      "id" : "82b355e4-a9a5-4ca3-80bd-ea2997fa440b",
+      "name" : "HiddenWord"
+    }
+  ]
+}
