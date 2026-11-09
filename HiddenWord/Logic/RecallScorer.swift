@@ -13,6 +13,9 @@ enum RecallScorer {
         let recalledTokenIDs: Set<Int>
         let matchedWords: Int
         let targetWords: Int
+        /// Words typed that aren't in the verse, keyed by the token they came before.
+        var extrasBefore: [Int: [String]] = [:]
+        var extrasAtEnd: [String] = []
 
         var percent: Int { Int((score * 100).rounded()) }
     }
@@ -53,6 +56,7 @@ enum RecallScorer {
 
         // Walk the table to find which target words were matched.
         var matchedTarget = Set<Int>()
+        var extras: [Int: [String]] = [:]
         var i = 0
         var j = 0
         while i < n && j < m {
@@ -63,9 +67,12 @@ enum RecallScorer {
             } else if table[i + 1][j] >= table[i][j + 1] {
                 i += 1
             } else {
+                extras[owner[i], default: []].append(attemptWords[j])
                 j += 1
             }
         }
+        var tail: [String] = []
+        while j < m { tail.append(attemptWords[j]); j += 1 }
 
         // A token is recalled when all of its words matched; punctuation-only tokens always are.
         var missedTokens = Set<Int>()
@@ -76,7 +83,7 @@ enum RecallScorer {
 
         let matched = matchedTarget.count
         let score = Double(matched) / Double(max(n, m))
-        return Result(score: score, recalledTokenIDs: recalled, matchedWords: matched, targetWords: n)
+        return Result(score: score, recalledTokenIDs: recalled, matchedWords: matched, targetWords: n, extrasBefore: extras, extrasAtEnd: tail)
     }
 
     /// Lowercase, fold accents and curly quotes, and split on anything that is not a letter or digit.

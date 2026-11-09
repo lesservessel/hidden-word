@@ -446,18 +446,28 @@ struct TypeRecallView: View {
 
             FlowLayout(spacing: 6, lineSpacing: 4) {
                 ForEach(tokens) { token in
+                    ForEach(Array((result.extrasBefore[token.id] ?? []).enumerated()), id: \.offset) { _, w in extraWord(w) }
                     let recalled = result.recalledTokenIDs.contains(token.id)
                     Text(token.raw)
                         .font(.serif(21, relativeTo: .body, weight: recalled ? .regular : .semibold))
                         .underline(!recalled, color: Color.ink)
                         .foregroundStyle(recalled ? Color.muted : Color.ink)
                 }
+                ForEach(Array(result.extrasAtEnd.enumerated()), id: \.offset) { _, w in extraWord(w) }
             }
 
-            Text("Underlined words are the ones to look at again.")
+            Text("Underlined words were missed; struck-through words were added.")
                 .font(.sans(12, relativeTo: .caption))
                 .foregroundStyle(Color.muted)
         }
+    }
+
+    /// A word you typed that isn't in the verse: yours, not Scripture, so lighter and struck.
+    private func extraWord(_ w: String) -> some View {
+        Text(w)
+            .font(.serifItalic(18, relativeTo: .body))
+            .strikethrough(true, color: Color.muted)
+            .foregroundStyle(Color.muted.opacity(0.8))
     }
 
     private func verdict(for percent: Int) -> String {

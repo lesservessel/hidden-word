@@ -21,3 +21,12 @@ final class ReminderTests: XCTestCase {
         XCTAssertEqual(SharedVerses.verse(for: day, in: items), SharedVerses.verse(for: day.addingTimeInterval(3600), in: items))
     }
 }
+
+final class ExtraWordTests: XCTestCase {
+    func testAddedWordsArePlacedWhereTyped() {
+        let r = RecallScorer.score(attempt: "Jesus wept loudly", target: "Jesus wept.")
+        XCTAssertEqual(r.extrasAtEnd, ["loudly"])
+        let r2 = RecallScorer.score(attempt: "He must greatly increase", target: "He must increase")
+        XCTAssertEqual(r2.extrasBefore[2], ["greatly"])
+    }
+}
